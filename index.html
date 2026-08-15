@@ -11,6 +11,11 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <!--
+      O iOS ignora ícone SVG ao "Adicionar à Tela de Início": sem este PNG ele
+      usa uma captura da página como ícone do app.
+    -->
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <title>Kana Trainer</title>
   </head>
   <body>

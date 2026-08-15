@@ -36,7 +36,13 @@ export function App() {
   // O tema é escolha dela e vive no elemento raiz. O index.html já nasce em
   // "light" para não haver um piscar de creme→escuro antes do IndexedDB.
   useEffect(() => {
-    document.documentElement.dataset.theme = settings.theme === 'noite' ? 'dark' : 'light';
+    const noite = settings.theme === 'noite';
+    document.documentElement.dataset.theme = noite ? 'dark' : 'light';
+    // A barra do navegador (e do app instalado) tem de acompanhar, senão fica
+    // uma faixa cor de papel em cima da tela escura.
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', noite ? '#16171c' : '#ece0c8');
   }, [settings.theme]);
 
   const updateProgress = (next: Progress) => {
