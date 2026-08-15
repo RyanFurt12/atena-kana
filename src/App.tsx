@@ -1,0 +1,108 @@
+/**
+ * Só quatro telas, então a navegação é uma variável de estado. Um roteador aqui
+ * seria uma dependência para resolver um problema que não existe.
+ *
+ * O progresso vive neste componente e desce por props; cada mudança é gravada no
+ * IndexedDB na hora, não no fim da sessão.
+ */
+
+import { useEffect, useState } from 'react';
+import { HomeScreen } from './screens/HomeScreen';
+import { SessionScreen } from './screens/SessionScreen';
+import { StatsScreen } from './screens/StatsScreen';
+import { SettingsScreen } from './screens/SettingsScreen';
+import { InkFilterDefs } from './components/RoughInk';
+import { DEFAULT_SETTINGS, emptyProgress, type Progress, type SessionMode, type Settings } from './lib/srs';
+import { loadProgress, loadSettings, saveProgress, saveSettings } from './lib/storage';
+
+type Screen = 'home' | 'session' | 'stats' | 'settings';
+
+export function App() {
+  const [screen, setScreen] = useState<Screen>('home');
+  const [mode, setMode] = useState<SessionMode>('geral');
+  const [progress, setProgress] = useState<Progress>(emptyProgress);
+  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    void (async () => {
+      const [storedProgress, storedSettings] = await Promise.all([loadProgress(), loadSettings()]);
+      setProgress(storedProgress);
+      setSettings(storedSettings);
+      setLoaded(true);
+    })();
+  }, []);
+
+  // O tema é escolha dela e vive no elemento raiz. O index.html já nasce em
+  // "light" para não haver um piscar de creme→escuro antes do IndexedDB.
+  useEffect(() => {
+    document.documentElement.dataset.theme = settings.theme === 'noite' ? 'dark' : 'light';
+  }, [settings.theme]);
+
+  const updateProgress = (next: Progress) => {
+    setProgress(next);
+    void saveProgress(next);
+  };
+
+  const updateSettings = (next: Settings) => {
+    setSettings(next);
+    void saveSettings(next);
+  };
+
+  // Sem isso a tela pisca com os dados vazios antes do IndexedDB responder, e a
+  // primeira coisa que ela veria era "0 de 46".
+  if (!loaded) return <div className="min-h-full" />;
+
+  const screens = () => {
+    switch (screen) {
+      case 'session':
+        return (
+          <SessionScreen
+            // Remonta a sessão ao trocar de modo, para não reaproveitar o baralho.
+            key={mode}
+            progress={progress}
+            settings={settings}
+            mode={mode}
+            onProgressChange={updateProgress}
+            onExit={() => setScreen('home')}
+          />
+        );
+      case 'stats':
+        return <StatsScreen progress={progress} settings={settings} onBack={() => setScreen('home')} />;
+      case 'settings':
+        return (
+          <SettingsScreen
+            settings={settings}
+            progress={progress}
+            onChange={updateSettings}
+            onRestore={(restoredProgress, restoredSettings) => {
+              updateProgress(restoredProgress);
+              updateSettings(restoredSettings);
+            }}
+            onBack={() => setScreen('home')}
+          />
+        );
+      default:
+        return (
+          <HomeScreen
+            progress={progress}
+            settings={settings}
+            onStart={(chosen) => {
+              setMode(chosen);
+              setScreen('session');
+            }}
+            onStats={() => setScreen('stats')}
+            onSettings={() => setScreen('settings')}
+          />
+        );
+    }
+  };
+
+  return (
+    <>
+      {/* Os filtros de borda de tinta vivem aqui, uma vez só. */}
+      <InkFilterDefs />
+      {screens()}
+    </>
+  );
+}

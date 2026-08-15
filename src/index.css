@@ -1,0 +1,174 @@
+@import 'tailwindcss';
+
+/*
+ * Paleta tirada dos materiais de escrita japonesa, não de uma paleta genérica:
+ * 和紙 (washi) como superfície, 墨 (sumi, tinta) para o texto, 藍 (ai, o índigo
+ * dos noren e do yukata) nos painéis de ação, e 朱 (shu, o vermelhão) reservado
+ * para duas coisas — correção e selo. Tinta vermelha é o que o professor japonês
+ * usa para corrigir a lição, então ela nunca aparece por decoração.
+ *
+ * A superfície agora é o papel, não o escuro: a folha é o objeto do app, e tudo
+ * acontece em cima dela.
+ */
+@theme {
+  --color-washi: #ece0c8;
+  --color-washi-light: #f3ead9;
+  --color-washi-shade: #ddcdb0;
+  --color-sumi: #221f1c;
+  --color-sumi-soft: #6b6153;
+  --color-ai: #1e3050;
+  --color-ai-deep: #142139;
+  --color-shu: #b4442c;
+  --color-matcha: #5c7a51;
+  --color-kohaku: #a8753a;
+
+  /*
+   * Serifada, para conversar com o pincel. As primeiras são as que a Apple
+   * instala; Georgia cobre Windows e Android. Optima ficou de lado: humanista
+   * sem serifa ficava moderna demais ao lado do sumi-ê.
+   */
+  --font-display: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Menlo', monospace;
+}
+
+:root {
+  --surface: var(--color-washi);
+  --panel: var(--color-washi-light);
+  --panel-raised: var(--color-ai);
+  --rule: #b9a68a;
+  --ink: var(--color-sumi);
+  --ink-dim: var(--color-sumi-soft);
+  --ink-on-panel: var(--color-washi-light);
+  --seal: var(--color-shu);
+  --paper-grain: 0.055;
+  color-scheme: light;
+}
+
+/*
+ * Variante noturna: a mesma folha, molhada de tinta. Serve para usar na cama,
+ * onde creme no escuro machuca — mas é uma *escolha* nos Ajustes, não algo que o
+ * sistema decide. O papel é a identidade do app e é o que ela vê ao abrir.
+ */
+:root[data-theme='dark'] {
+  --surface: #16171c;
+  --panel: #1f2129;
+  --panel-raised: var(--color-ai);
+  --rule: #45403a;
+  --ink: #e8dfcd;
+  --ink-dim: #8d8676;
+  --ink-on-panel: #e8dfcd;
+  --seal: #c9553a;
+  --paper-grain: 0.08;
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  --surface: var(--color-washi);
+  --panel: var(--color-washi-light);
+  --panel-raised: var(--color-ai);
+  --rule: #b9a68a;
+  --ink: var(--color-sumi);
+  --ink-dim: var(--color-sumi-soft);
+  --ink-on-panel: var(--color-washi-light);
+  --seal: var(--color-shu);
+  --paper-grain: 0.055;
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-display);
+  -webkit-font-smoothing: antialiased;
+  /* Desenhar com o dedo não pode rolar a página nem selecionar texto. */
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/*
+ * A fibra do papel. Ruído fractal gerado pelo próprio SVG — nada de imagem de
+ * textura para baixar, e funciona em qualquer tamanho de tela.
+ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: var(--paper-grain);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--seal);
+  outline-offset: 3px;
+}
+
+/*
+ * O único momento coreografado do app: ao acertar o desenho, o caractere se
+ * reescreve traço a traço. É a recompensa e a última demonstração da ordem certa.
+ */
+@keyframes write-stroke {
+  from {
+    stroke-dashoffset: var(--stroke-length);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.stroke-animate {
+  stroke-dasharray: var(--stroke-length);
+  stroke-dashoffset: var(--stroke-length);
+  animation: write-stroke var(--stroke-duration, 320ms) ease-out forwards;
+  animation-delay: var(--stroke-delay, 0ms);
+}
+
+@keyframes nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+.nudge {
+  animation: nudge 240ms ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stroke-animate {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .nudge {
+    animation: none;
+  }
+}

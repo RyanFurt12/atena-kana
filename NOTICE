@@ -1,0 +1,11 @@
+Kana Trainer inclui dados de traço derivados do KanjiVG.
+
+KanjiVG
+Copyright (C) 2009-2024 Ulrich Apel
+https://kanjivg.tagaini.net
+Licenciado sob Creative Commons Attribution-Share Alike 3.0
+https://creativecommons.org/licenses/by-sa/3.0/
+
+O arquivo src/data/strokes.json é uma obra derivada do KanjiVG (extração dos
+paths de traço dos SVGs de hiragana) e é distribuído sob a mesma licença
+CC BY-SA 3.0.
