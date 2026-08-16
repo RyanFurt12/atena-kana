@@ -25,15 +25,10 @@ export function MountainSun({ className, opacity = 0.5 }: DecoProps) {
       aria-hidden="true"
       preserveAspectRatio="xMinYMin meet"
     >
-      <defs>
-        {/* Um borrão de meio pixel: sem isso a silhueta fica com cara de vetor
-            recortado, e o que se quer é a borda molhada da aguada. */}
-        <filter id="wash" x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur stdDeviation="0.7" />
-        </filter>
-      </defs>
-      <circle cx="132" cy="34" r="17" fill="var(--seal)" opacity={opacity * 1.4} />
-      <g filter="url(#wash)">
+      {/* `dry-brush` (em RoughInk) recorta o preenchimento por uma máscara de
+          ruído: a silhueta ganha densidade irregular em vez de cor chapada. */}
+      <circle cx="132" cy="34" r="17" fill="var(--seal)" opacity={opacity * 1.4} filter="url(#dry-brush)" />
+      <g filter="url(#dry-brush)">
         {/* Cume distante, mais claro — a profundidade vem da opacidade. */}
         <path
           d="M0 96 C 22 74, 34 58, 52 40 C 66 26, 78 30, 90 44 C 104 60, 118 78, 138 96 Z"
@@ -57,11 +52,13 @@ export function MountainSun({ className, opacity = 0.5 }: DecoProps) {
 
 /** Bambu: colmos com nós e folhas. Canto superior direito. */
 export function Bamboo({ className, opacity = 0.42 }: DecoProps) {
-  const leaf = (d: string, o: number) => <path d={d} fill="var(--ink)" opacity={opacity * o} />;
+  const leaf = (d: string, o: number) => (
+    <path d={d} fill="var(--ink)" opacity={opacity * o} filter="url(#dry-brush)" />
+  );
 
   return (
     <svg viewBox="0 0 120 160" className={className} fill="none" aria-hidden="true">
-      <g stroke="var(--ink)" strokeWidth="3.4" opacity={opacity} strokeLinecap="round">
+      <g stroke="var(--ink)" strokeWidth="3.4" opacity={opacity} strokeLinecap="round" filter="url(#dry-brush)">
         <path d="M78 0 C 80 34, 79 70, 74 118" />
         <path d="M99 6 C 102 40, 101 80, 96 132" />
         {/* Nós do colmo. */}

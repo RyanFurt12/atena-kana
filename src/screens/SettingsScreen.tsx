@@ -92,7 +92,7 @@ export function SettingsScreen({ settings, progress, onChange, onRestore, onBack
   };
 
   return (
-    <div className="mx-auto flex min-h-full max-w-md flex-col gap-8 p-6">
+    <div className="mx-auto flex min-h-full max-w-md flex-col gap-8 p-6 pb-28">
       <header className="flex items-baseline justify-between">
         <h1 className="text-2xl">Ajustes</h1>
         <button onClick={onBack} className="text-sm underline underline-offset-4" style={{ color: 'var(--ink-dim)' }}>
@@ -130,7 +130,7 @@ export function SettingsScreen({ settings, progress, onChange, onRestore, onBack
             value={settings.sessionSize}
             onChange={(event) => onChange({ ...settings, sessionSize: Number(event.target.value) })}
             className="px-2 py-1"
-            style={{ background: 'var(--panel)', border: '1px solid var(--rule)', color: 'var(--ink)' }}
+            style={{ border: '1px solid var(--rule)', color: 'var(--ink)' }}
           >
             {[10, 15, 20, 30, 40].map((size) => (
               <option key={size} value={size}>

@@ -12,6 +12,7 @@ import { SessionScreen } from './screens/SessionScreen';
 import { StatsScreen } from './screens/StatsScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { InkFilterDefs } from './components/RoughInk';
+import { ART } from './lib/artwork';
 import { DEFAULT_SETTINGS, emptyProgress, type Progress, type SessionMode, type Settings } from './lib/srs';
 import { loadProgress, loadSettings, saveProgress, saveSettings } from './lib/storage';
 
@@ -43,6 +44,11 @@ export function App() {
     document
       .querySelector('meta[name="theme-color"]')
       ?.setAttribute('content', noite ? '#16171c' : '#ece0c8');
+    // A folha de fundo é uma pintura por tema; o CSS só consome esta variável.
+    document.documentElement.style.setProperty(
+      '--paper-image',
+      `url(${noite ? ART.paperDark : ART.paperLight})`,
+    );
   }, [settings.theme]);
 
   const updateProgress = (next: Progress) => {

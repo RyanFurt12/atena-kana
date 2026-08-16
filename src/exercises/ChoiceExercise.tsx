@@ -12,7 +12,8 @@
 import { useState } from 'react';
 import { KanaGlyph } from '../components/KanaGlyph';
 import { ChoiceGrid, type Option } from '../components/ChoiceGrid';
-import { Ensou, Sakura } from '../components/sumie';
+import { Sakura } from '../components/sumie';
+import { InkEnsou } from '../components/InkArt';
 import { buildChoices } from '../lib/choices';
 import type { Kana } from '../data/kana';
 import { speakKana } from '../lib/speech';
@@ -53,11 +54,12 @@ export function ChoiceExercise({ kana, pool, mode, sound, onDone }: Props) {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Sem o quadriculado aqui: o papel de escrita serve para escrever. Ler e
-          lembrar são leitura, e a moldura só disputava atenção com o caractere.
-          Fica o ensō, que emoldura sem cercar. */}
+      {/* Sem o papel quadriculado aqui: ele serve para escrever, e ler e lembrar
+          são leitura — a moldura só disputava atenção com o caractere. O 円相
+          fica nos dois, que é o que amarra os exercícios de escolha como uma
+          coisa só; o quadriculado volta na tela de desenho. */}
       <div className="relative mx-auto aspect-square w-full max-w-[17rem]">
-        {mode === 'recognize' && <Ensou className="pointer-events-none absolute inset-0 h-full w-full" />}
+        <InkEnsou />
         <div className="absolute inset-0 grid place-items-center p-8">
           {mode === 'recognize' ? (
             <KanaGlyph char={kana.char} className="h-full w-full" weight={4} />

@@ -27,9 +27,8 @@ export function GenkoCell({ children, tone = 'neutral', className = '' }: Props)
   return (
     <div
       className={`relative aspect-square w-full ${className}`}
-      style={{ background: 'var(--panel)' }}
     >
-      <RoughFrame color={TONE_BORDER[tone]} width={1.5} />
+      <RoughFrame color={TONE_BORDER[tone]} width={2.5} />
 
       {/* Guias em cruz, tracejadas e trêmulas — como o papel de verdade, que é
           impresso torto e amassa. */}

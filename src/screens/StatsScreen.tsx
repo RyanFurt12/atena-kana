@@ -5,14 +5,20 @@
  * modos, mentiria: ela lê metade do alfabeto e desenha cinco caracteres, e a
  * média esconderia as duas coisas. Uma aba por modo mostra a defasagem, que é
  * justamente a informação útil.
+ *
+ * O `pb-28` é folga para a faixa escura da arte de papel, que fica fixa no pé da
+ * tela: sem ela, a última linha de texto cai em cima da onda e some.
  */
 
 import { useState } from 'react';
 import { GojuonGrid } from '../components/GojuonGrid';
+import { BoxLadder } from '../components/BoxLadder';
+import { ComoFunciona } from '../components/ComoFunciona';
 import {
   EXERCISE_HINTS,
   EXERCISE_LABELS,
   EXERCISE_TYPES,
+  boxDistribution,
   modeProgress,
   type ExerciseType,
   type Progress,
@@ -43,7 +49,7 @@ export function StatsScreen({ progress, settings, onBack }: Props) {
   const accuracy = stats.seen === 0 ? null : Math.round((stats.correct / stats.seen) * 100);
 
   return (
-    <div className="mx-auto flex min-h-full max-w-md flex-col gap-6 p-6">
+    <div className="mx-auto flex min-h-full max-w-md flex-col gap-6 p-6 pb-28">
       <header className="flex items-baseline justify-between">
         <h1 className="text-2xl">Progresso</h1>
         <button onClick={onBack} className="text-sm underline underline-offset-4" style={{ color: 'var(--ink-dim)' }}>
@@ -92,7 +98,12 @@ export function StatsScreen({ progress, settings, onBack }: Props) {
           : `${accuracy}% de acerto em ${plural(stats.seen, 'resposta', 'respostas')}`}
       </p>
 
+      {/* A régua fica logo abaixo dos números que ela explica. */}
+      <BoxLadder distribution={boxDistribution(progress, settings, tab)} />
+
       <GojuonGrid progress={progress} type={tab} />
+
+      <ComoFunciona sessionSize={settings.sessionSize} />
 
       <p className="text-xs leading-relaxed" style={{ color: 'var(--ink-dim)' }}>
         Dados de traço do KanjiVG, de Ulrich Apel, sob licença CC BY-SA 3.0.

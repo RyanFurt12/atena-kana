@@ -68,12 +68,11 @@ export function ChoiceGrid({ options, onPick, revealed }: Props) {
               showWrong ? 'nudge' : ''
             }`}
             style={{
-              background: 'var(--panel)',
               color: showWrong ? 'var(--seal)' : 'var(--ink)',
               opacity: picked !== null && !showRight && !showWrong ? 0.4 : 1,
             }}
           >
-            <RoughFrame color={border} width={showRight || showWrong ? 2 : 1} />
+            <RoughFrame color={border} width={showRight || showWrong ? 3 : 2} />
             {/* Atalho de teclado, para quando ela usar no computador. */}
             <span className="sr-only">{i + 1}</span>
             <span className="relative">{option.node}</span>

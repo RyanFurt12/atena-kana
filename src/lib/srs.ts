@@ -414,6 +414,27 @@ export function modeProgress(progress: Progress, settings: Settings, type: Exerc
 }
 
 /**
+ * Quantos caracteres estão em cada caixa naquele modo, do 0 ao 5.
+ *
+ * É o que a régua da tela de progresso desenha: além de mostrar o quanto falta,
+ * ela explica o próprio sistema — dá para ver a fila andando da esquerda para a
+ * direita conforme ela acerta.
+ */
+export function boxDistribution(progress: Progress, settings: Settings, type: ExerciseType): number[] {
+  const contagem = new Array(MAX_BOX + 1).fill(0);
+  for (const char of introducedIn(progress, settings, type)) {
+    contagem[getSkill(progress, char, type).box]++;
+  }
+  return contagem;
+}
+
+/** Quantas caixas existem, e a partir de qual conta como dominado. */
+export const BOX_COUNT = MAX_BOX + 1;
+
+/** Intervalo em dias de cada caixa, para a tela de progresso explicar. */
+export const BOX_INTERVALS = BOX_DAYS;
+
+/**
  * O número do 稽古 na tela inicial: caracteres dominados em *todos* os modos que
  * os suportam.
  *

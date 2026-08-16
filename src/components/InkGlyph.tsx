@@ -64,6 +64,9 @@ export function InkGlyph({
       strokeWidth={weight}
       strokeLinecap="round"
       strokeLinejoin="round"
+      // A sangria dá ao traço a borda absorvida pela fibra, em vez do recorte
+      // vetorial. É sutil de propósito: legibilidade vem antes da textura.
+      filter="url(#ink-bleed)"
       role={label ? 'img' : 'presentation'}
       aria-label={label}
       aria-hidden={label ? undefined : true}

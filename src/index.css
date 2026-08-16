@@ -40,7 +40,10 @@
   --ink-dim: var(--color-sumi-soft);
   --ink-on-panel: var(--color-washi-light);
   --seal: var(--color-shu);
-  --paper-grain: 0.055;
+  --paper-grain: 0.05;
+  --paper-mottle: 0.16;
+  --paper-edge: #b39a6e;
+  --paper-blend: multiply;
   color-scheme: light;
 }
 
@@ -58,7 +61,12 @@
   --ink-dim: #8d8676;
   --ink-on-panel: #e8dfcd;
   --seal: #c9553a;
-  --paper-grain: 0.08;
+  --paper-grain: 0.07;
+  /* No escuro multiplicar não teria o que escurecer; a vinheta vem de um
+     preto quase puro somado por cima, então segue multiply mas bem de leve. */
+  --paper-mottle: 0.24;
+  --paper-edge: #000000;
+  --paper-blend: multiply;
   color-scheme: dark;
 }
 
@@ -71,7 +79,10 @@
   --ink-dim: var(--color-sumi-soft);
   --ink-on-panel: var(--color-washi-light);
   --seal: var(--color-shu);
-  --paper-grain: 0.055;
+  --paper-grain: 0.05;
+  --paper-mottle: 0.16;
+  --paper-edge: #b39a6e;
+  --paper-blend: multiply;
   color-scheme: light;
 }
 
@@ -95,8 +106,29 @@ body {
 }
 
 /*
- * A fibra do papel. Ruído fractal gerado pelo próprio SVG — nada de imagem de
- * textura para baixar, e funciona em qualquer tamanho de tela.
+ * O papel, em três camadas. Uma camada só de ruído fino dava um creme chapado
+ * com chuvisco por cima — washi de verdade tem mancha grande, fibra miúda e
+ * borda mais escura porque a folha encurva.
+ *
+ * Tudo gerado por SVG embutido: nenhuma imagem de textura para baixar, e escala
+ * para qualquer tela sem borrar.
+ */
+
+/*
+ * As duas camadas ficam POR CIMA do conteúdo, não atrás.
+ *
+ * Atrás elas eram inúteis: qualquer painel com fundo próprio pintava por cima e
+ * voltava a ser um retângulo chapado. Numa folha de verdade a fibra passa por
+ * cima da tinta — o texto impresso também tem grão. É essa camada única
+ * cobrindo tudo que costura painel, botão e fundo no mesmo material.
+ */
+
+/*
+ * 1. A folha: a imagem de fundo do app inteiro.
+ *
+ * `--paper-image` é definido pelo App conforme o tema (ver src/lib/artwork.ts).
+ * Fica fixo e cobre a tela, então a pintura não escorre com a rolagem nem
+ * repete emenda visível.
  */
 body::before {
   content: '';
@@ -104,13 +136,45 @@ body::before {
   inset: 0;
   pointer-events: none;
   z-index: 0;
+  background-image: var(--paper-image);
+  background-size: cover;
+  background-position: center;
+}
+
+/*
+ * 2. Uma fibra miúda POR CIMA de tudo.
+ *
+ * Os painéis têm fundo próprio e cobririam a folha, voltando a parecer
+ * retângulos chapados. Esta camada passa por cima de painel, botão e fundo e
+ * costura os três no mesmo material — como o grão do papel, que também está
+ * sobre a tinta impressa.
+ */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
   opacity: var(--paper-grain);
+  mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 #root {
   position: relative;
   z-index: 1;
+}
+
+/*
+ * Painel com pintura de fundo. `100% 100%` estica em vez de recortar: a caixa
+ * do botão é definida pelo texto dentro dela, então `cover` comeria as bordas da
+ * arte — e é justamente a borda que costuma carregar o degradê ou a pincelada.
+ * Textura tolera esticar; recorte não tem volta.
+ */
+.art-panel {
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 button {

@@ -11,8 +11,10 @@
 import { KanaWordmark } from '../components/KanaWordmark';
 import { KanjiWord } from '../components/KanjiWord';
 import { Seal } from '../components/Seal';
-import { RoughCircle, RoughFrame } from '../components/RoughInk';
-import { Bamboo, MountainSun, SeigaihaBand } from '../components/sumie';
+import { RoughFrame } from '../components/RoughInk';
+import { InkBlot } from '../components/InkArt';
+import { ART } from '../lib/artwork';
+import { Bamboo, MountainSun } from '../components/sumie';
 import {
   EXERCISE_HINTS,
   EXERCISE_KANJI,
@@ -56,13 +58,12 @@ function ModeRow({
     <button
       onClick={() => onStart(type)}
       className="relative flex w-full items-center gap-3 px-3 py-3 text-left"
-      style={{ background: 'var(--panel)' }}
     >
       <RoughFrame />
 
       {/* Medalhão de tinta com o kanji do modo — 読 覚 書 白. */}
       <span className="relative grid h-11 w-11 shrink-0 place-items-center p-2.5">
-        <RoughCircle color="var(--ink)" />
+        <InkBlot />
         <KanjiWord
           word={EXERCISE_KANJI[type]}
           className="relative h-full w-full"
@@ -118,14 +119,13 @@ export function HomeScreen({ progress, settings, onStart, onStats, onSettings }:
             da folha, então é para onde o polegar vai primeiro. */}
         <button
           onClick={() => onStart('geral')}
-          className="relative flex w-full flex-col items-center gap-2 px-5 py-4"
+          className="art-panel relative flex w-full flex-col items-center gap-2 px-5 py-4"
           style={{
-            background: 'var(--panel-raised)',
+            backgroundImage: `url(${ART.panelTraining})`,
             color: 'var(--ink-on-panel)',
             boxShadow: '0 2px 0 rgba(0,0,0,0.12)',
           }}
         >
-          <RoughFrame color="rgba(255,255,255,0.28)" />
           <KanjiWord word="稽古" className="relative h-6" weight={4.5} color="var(--ink-on-panel)" />
           <span className="relative text-sm tracking-[0.3em] uppercase">
             {primeiraVez ? 'Começar' : 'Treino geral'}
@@ -152,30 +152,46 @@ export function HomeScreen({ progress, settings, onStart, onStats, onSettings }:
       </div>
 
       {/* Rodapé em índigo com a faixa de ondas, como a barra do mockup. */}
+      {/*
+        A arte entra como <img> no fluxo, e é ela que dá a altura do rodapé.
+        Com `background-size: cover` era o contrário — a caixa mandava e a
+        imagem era recortada, comendo o degradê de cima.
+        Também não há cor de fundo aqui: o topo transparente da arte precisa
+        deixar o papel aparecer para o desbotado funcionar.
+      */}
       <div
-        className="relative mt-auto flex flex-col"
-        style={{ background: 'var(--panel-raised)', color: 'var(--ink-on-panel)' }}
+        className="relative mt-auto"
+        // Piso de altura: se a arte não carregar, o rodapé não colapsa em cima
+        // dos próprios botões.
+        style={{ color: 'var(--ink-on-panel)', minHeight: '6.5rem' }}
       >
-        <div className="flex items-stretch">
+        <img
+          src={ART.footer}
+          alt=""
+          aria-hidden="true"
+          className="pointer-events-none block w-full select-none"
+        />
+
+        {/* A pintura é uma só, do rodapé inteiro. A divisória entre os botões é
+            um tique curto no meio, não uma régua de altura total: a régua
+            cortava a faixa ao meio e fazia cada metade parecer um painel
+            separado, com imagem própria. */}
+        <div className="absolute inset-x-0 bottom-0 flex items-stretch pb-7">
           {[
             { kanji: '記録', label: 'Progresso', onClick: onStats },
             { kanji: '設定', label: 'Ajustes', onClick: onSettings },
-          ].map((item, i) => (
-            <button
-              key={item.label}
-              onClick={item.onClick}
-              className="flex flex-1 flex-col items-center gap-1.5 py-4"
-              style={i === 0 ? { borderRight: '1px solid rgba(255,255,255,0.18)' } : undefined}
-            >
+          ].map((item) => (
+            <button key={item.label} onClick={item.onClick} className="flex flex-1 flex-col items-center gap-1.5 py-4">
               <KanjiWord word={item.kanji} className="h-5" weight={4.5} color="var(--ink-on-panel)" />
               <span className="text-xs tracking-widest">{item.label}</span>
             </button>
           ))}
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1/2 left-1/2 h-8 w-px -translate-x-1/2 -translate-y-1/2"
+            style={{ background: 'rgba(255,255,255,0.22)' }}
+          />
         </div>
-        {/* As ondas ficam *abaixo* dos rótulos, numa faixa própria. Atrás do
-            texto elas quebravam a leitura, que é o oposto do que um enfeite deve
-            fazer. */}
-        <SeigaihaBand className="pointer-events-none h-6 w-full shrink-0" opacity={0.5} />
       </div>
     </div>
   );

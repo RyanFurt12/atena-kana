@@ -26,6 +26,45 @@ export function InkFilterDefs() {
           <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="3" result="noise" />
           <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.6" xChannelSelector="R" yChannelSelector="G" />
         </filter>
+
+        {/*
+          Pincel seco: recorta a forma por uma máscara de ruído, para o
+          preenchimento ganhar densidade irregular em vez de cor chapada. É o que
+          separa uma aguada de um bloco de cor — e era o "sólido demais" das
+          montanhas e do bambu.
+        */}
+        <filter id="dry-brush" x="-10%" y="-10%" width="120%" height="120%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="4" seed="11" result="noise" />
+          <feColorMatrix
+            in="noise"
+            type="matrix"
+            values="0 0 0 0 0
+                    0 0 0 0 0
+                    0 0 0 0 0
+                    0.9 0.5 0 0 0.42"
+            result="mottle"
+          />
+          <feComposite in="SourceGraphic" in2="mottle" operator="in" result="dry" />
+          <feGaussianBlur in="dry" stdDeviation="0.35" />
+        </filter>
+
+        {/*
+          Sangria de tinta no papel: desloca a borda do traço com ruído miúdo e
+          borra meio pixel. O traço deixa de ter recorte vetorial e passa a
+          parecer absorvido pela fibra — sem perder legibilidade.
+        */}
+        <filter id="ink-bleed" x="-6%" y="-6%" width="112%" height="112%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.35" numOctaves="2" seed="5" result="fibra" />
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="fibra"
+            scale="0.9"
+            xChannelSelector="R"
+            yChannelSelector="G"
+            result="deslocado"
+          />
+          <feGaussianBlur in="deslocado" stdDeviation="0.22" />
+        </filter>
       </defs>
     </svg>
   );
@@ -34,7 +73,10 @@ export function InkFilterDefs() {
 type FrameProps = {
   /** Cor do traço. Aceita qualquer token. */
   color?: string;
-  /** Espessura em pixels de tela — não escala com a caixa. */
+  /**
+   * Espessura em pixels de tela — `non-scaling-stroke` mantém uniforme,
+   * independente do tamanho da caixa.
+   */
   width?: number;
   /** Preenchimento interno, para a moldura também servir de fundo. */
   fill?: string;
@@ -49,7 +91,7 @@ type FrameProps = {
  * `vector-effect` mantém a espessura uniforme — o ruído estica junto, o que dá
  * variação de mão em vez de um padrão repetido.
  */
-export function RoughFrame({ color = 'var(--rule)', width = 1, fill = 'none', className = '' }: FrameProps) {
+export function RoughFrame({ color = 'var(--rule)', width = 2, fill = 'none', className = '' }: FrameProps) {
   return (
     <svg
       className={`pointer-events-none absolute inset-0 h-full w-full ${className}`}
