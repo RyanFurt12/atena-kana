@@ -5,8 +5,8 @@
  * tela. Usa `<details>` nativo em vez de estado no React — abre sem JavaScript,
  * o leitor de tela anuncia sozinho e o navegador já cuida do teclado.
  *
- * O texto explica o que a régua de caixas acima não consegue mostrar: por que a
- * caixa desce quando erra e quando entram letras novas.
+ * O texto explica o que a grade acima não consegue mostrar: por que a caixa
+ * desce quando erra e quando entram letras novas.
  */
 
 import { MASTERED_BOX } from '../lib/srs';

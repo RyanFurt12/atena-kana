@@ -96,7 +96,7 @@ const DAY = 24 * 60 * 60 * 1000;
 /** Intervalo em dias de cada caixa. A caixa 0 volta na mesma sessão. */
 const BOX_DAYS = [0, 1, 2, 4, 8, 16];
 
-const MAX_BOX = BOX_DAYS.length - 1;
+export const MAX_BOX = BOX_DAYS.length - 1;
 
 /** Considerado dominado a partir daqui — só para as estatísticas. */
 export const MASTERED_BOX = 4;
@@ -140,6 +140,16 @@ export function emptySkill(): SkillState {
 
 export function getSkill(progress: Progress, char: string, type: ExerciseType): SkillState {
   return progress.skills[skillKey(char, type)] ?? emptySkill();
+}
+
+/**
+ * Quantos dias faltam para a letra voltar a ter prioridade — 0 quer dizer hoje.
+ *
+ * Sai de `dueAt`, não do intervalo nominal da caixa: o que interessa na ficha é
+ * quando *aquela* letra volta, e não quanto a caixa dela costuma esperar.
+ */
+export function daysUntilDue(skill: SkillState, now: number = Date.now()): number {
+  return Math.max(0, Math.ceil((skill.dueAt - now) / DAY));
 }
 
 /**
@@ -412,27 +422,6 @@ export function modeProgress(progress: Progress, settings: Settings, type: Exerc
     correct,
   };
 }
-
-/**
- * Quantos caracteres estão em cada caixa naquele modo, do 0 ao 5.
- *
- * É o que a régua da tela de progresso desenha: além de mostrar o quanto falta,
- * ela explica o próprio sistema — dá para ver a fila andando da esquerda para a
- * direita conforme ela acerta.
- */
-export function boxDistribution(progress: Progress, settings: Settings, type: ExerciseType): number[] {
-  const contagem = new Array(MAX_BOX + 1).fill(0);
-  for (const char of introducedIn(progress, settings, type)) {
-    contagem[getSkill(progress, char, type).box]++;
-  }
-  return contagem;
-}
-
-/** Quantas caixas existem, e a partir de qual conta como dominado. */
-export const BOX_COUNT = MAX_BOX + 1;
-
-/** Intervalo em dias de cada caixa, para a tela de progresso explicar. */
-export const BOX_INTERVALS = BOX_DAYS;
 
 /**
  * O número do 稽古 na tela inicial: caracteres dominados em *todos* os modos que

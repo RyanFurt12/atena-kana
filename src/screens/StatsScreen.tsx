@@ -12,13 +12,11 @@
 
 import { useState } from 'react';
 import { GojuonGrid } from '../components/GojuonGrid';
-import { BoxLadder } from '../components/BoxLadder';
 import { ComoFunciona } from '../components/ComoFunciona';
 import {
   EXERCISE_HINTS,
   EXERCISE_LABELS,
   EXERCISE_TYPES,
-  boxDistribution,
   modeProgress,
   type ExerciseType,
   type Progress,
@@ -98,10 +96,7 @@ export function StatsScreen({ progress, settings, onBack }: Props) {
           : `${accuracy}% de acerto em ${plural(stats.seen, 'resposta', 'respostas')}`}
       </p>
 
-      {/* A régua fica logo abaixo dos números que ela explica. */}
-      <BoxLadder distribution={boxDistribution(progress, settings, tab)} />
-
-      <GojuonGrid progress={progress} type={tab} />
+      <GojuonGrid progress={progress} settings={settings} type={tab} />
 
       <ComoFunciona sessionSize={settings.sessionSize} />
 
