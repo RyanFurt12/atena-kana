@@ -14,7 +14,7 @@ import { SettingsScreen } from './screens/SettingsScreen';
 import { InkFilterDefs } from './components/RoughInk';
 import { ART } from './lib/artwork';
 import { DEFAULT_SETTINGS, emptyProgress, type Progress, type SessionMode, type Settings } from './lib/srs';
-import { loadProgress, loadSettings, saveProgress, saveSettings } from './lib/storage';
+import { loadProgress, loadSettings, requestPersistence, saveProgress, saveSettings } from './lib/storage';
 
 type Screen = 'home' | 'session' | 'stats' | 'settings';
 
@@ -51,9 +51,11 @@ export function App() {
     );
   }, [settings.theme]);
 
-  const updateProgress = (next: Progress) => {
+  // `force` só na restauração de backup: fora dela, uma gravação depois de uma
+  // leitura falha apagaria o progresso real com o zero que ficou na tela.
+  const updateProgress = (next: Progress, force = false) => {
     setProgress(next);
-    void saveProgress(next);
+    void saveProgress(next, force);
   };
 
   const updateSettings = (next: Settings) => {
@@ -88,7 +90,7 @@ export function App() {
             progress={progress}
             onChange={updateSettings}
             onRestore={(restoredProgress, restoredSettings) => {
-              updateProgress(restoredProgress);
+              updateProgress(restoredProgress, true);
               updateSettings(restoredSettings);
             }}
             onBack={() => setScreen('home')}
@@ -100,6 +102,9 @@ export function App() {
             progress={progress}
             settings={settings}
             onStart={(chosen) => {
+              // Pedido aqui, e não na carga, porque o navegador decide olhando
+              // engajamento: um toque dela vale mais que um app recém-aberto.
+              void requestPersistence();
               setMode(chosen);
               setScreen('session');
             }}
