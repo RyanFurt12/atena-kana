@@ -7,7 +7,7 @@
  */
 
 import { useRef, useState } from 'react';
-import { GROUP_LABELS, type Group } from '../data/kana';
+import { GROUP_LABELS, SCRIPTS, SCRIPT_LABELS, type Group, type Script } from '../data/kana';
 import type { Progress, Settings } from '../lib/srs';
 import { makeBackup, parseBackup } from '../lib/storage';
 
@@ -20,6 +20,43 @@ type Props = {
 };
 
 const GROUPS: Group[] = ['basic', 'dakuten', 'handakuten', 'yoon'];
+
+/**
+ * A escolha do silabário.
+ *
+ * Radio, e não dois interruptores como os grupos logo abaixo: os grupos somam e
+ * este escolhe. Dois interruptores diriam que dá para ligar os dois, que é
+ * justamente o que não dá — e a trava de "pelo menos um" que os grupos precisam
+ * sai de graça aqui, porque um radio não tem estado vazio.
+ */
+function ScriptPicker({ value, onChange }: { value: Script; onChange: (script: Script) => void }) {
+  return (
+    <div role="radiogroup" aria-label="Silabário" className="grid grid-cols-2 gap-2">
+      {SCRIPTS.map((script) => {
+        const selected = value === script;
+        return (
+          <button
+            key={script}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            onClick={() => onChange(script)}
+            className="px-4 py-3 text-sm"
+            style={{
+              border: '1px solid var(--rule)',
+              // Mesma superfície escura das abas do progresso: é o jeito do app
+              // dizer "esta é a que vale" sem inventar um controle novo.
+              background: selected ? 'var(--panel-raised)' : 'transparent',
+              color: selected ? 'var(--ink-on-panel)' : 'var(--ink-dim)',
+            }}
+          >
+            {SCRIPT_LABELS[script]}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 function Toggle({
   checked,
@@ -99,6 +136,17 @@ export function SettingsScreen({ settings, progress, onChange, onRestore, onBack
           Voltar
         </button>
       </header>
+
+      <section className="flex flex-col gap-2">
+        <h2 className="text-sm tracking-[0.2em] uppercase" style={{ color: 'var(--ink-dim)' }}>
+          silabário
+        </h2>
+        <ScriptPicker value={settings.script} onChange={(script) => onChange({ ...settings, script })} />
+        <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--ink-dim)' }}>
+          Um de cada vez. Cada silabário tem o progresso dele: trocar aqui não apaga nada, e você
+          volta exatamente onde parou no outro.
+        </p>
+      </section>
 
       <section className="flex flex-col gap-2">
         <h2 className="text-sm tracking-[0.2em] uppercase" style={{ color: 'var(--ink-dim)' }}>

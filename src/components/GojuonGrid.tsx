@@ -1,8 +1,12 @@
 /**
  * O gojūon (五十音) como medidor de progresso.
  *
- * Vale mais do que "63% concluído": a grade é a estrutura real do hiragana, então
- * um buraco na linha ら aparece como um buraco na linha ら.
+ * Vale mais do que "63% concluído": a grade é a estrutura real do silabário,
+ * então um buraco na linha ら aparece como um buraco na linha ら.
+ *
+ * Mostra o silabário dos ajustes, e só ele. Hiragana e katakana ocupam a mesma
+ * grade — あ e ア são a mesma casa —, então não haveria onde pôr os dois; como o
+ * treino já é de um por vez, a grade simplesmente segue a escolha.
  *
  * Cada célula carrega duas informações em dois canais separados, e a separação é
  * o ponto. A tinta do traço diz se a letra já entrou no jogo — bloqueada quase
@@ -177,10 +181,16 @@ type Props = {
 export function GojuonGrid({ progress, settings, type }: Props) {
   const [selected, setSelected] = useState<string | null>(null);
 
-  // A ficha é de um par letra × modo; trocar de aba invalida a seleção.
-  useEffect(() => setSelected(null), [type]);
+  // A ficha é de um par letra × modo; trocar de aba invalida a seleção. Trocar de
+  // silabário também: a letra selecionada nem existe mais na grade nova.
+  useEffect(() => setSelected(null), [type, settings.script]);
 
-  const byPosition = new Map(ALL_KANA.filter((k) => k.group === 'basic').map((k) => [`${k.row}${k.vowel}`, k.char]));
+  // Só os básicos do silabário escolhido: sem o filtro, あ e ア disputariam a
+  // chave "aa" e uma delas sumiria da grade sem aviso.
+  const basicos = ALL_KANA.filter((k) => k.script === settings.script && k.group === 'basic');
+  const byPosition = new Map(basicos.map((k) => [`${k.row}${k.vowel}`, k.char]));
+  // ん / ン não tem linha nem vogal, então não cai no mapa acima.
+  const nasal = basicos.find((k) => k.row === 'n')!.char;
   const liberadas = new Set(introducedIn(progress, settings, type));
 
   const stateOf = (char: string): CellState =>
@@ -219,7 +229,7 @@ export function GojuonGrid({ progress, settings, type }: Props) {
           para não divergir delas na próxima mudança. */}
       <div className="grid grid-cols-[1.25rem_repeat(5,1fr)] items-center gap-1.5">
         <span />
-        {cell('ん', 'n')}
+        {cell(nasal, 'n')}
       </div>
 
       <Ficha char={selected} state={selected ? stateOf(selected) : null} />

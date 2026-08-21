@@ -16,7 +16,7 @@
  *    sessão sempre completa o número de cartas pedido, mesmo sem nada vencido.
  */
 
-import { ALL_KANA, INTRO_ORDER, KANA_BY_CHAR, type Group } from '../data/kana';
+import { ALL_KANA, INTRO_ORDER, KANA_BY_CHAR, type Group, type Script } from '../data/kana';
 import { canDraw } from './strokeMatch';
 
 export type ExerciseType = 'recognize' | 'recall' | 'draw_guided' | 'draw_free';
@@ -44,12 +44,22 @@ export const EXERCISE_KANJI: Record<ExerciseType, string> = {
   draw_free: '白',
 };
 
-export const EXERCISE_HINTS: Record<ExerciseType, string> = {
-  recognize: 'Vê o hiragana, escolhe o romaji',
-  recall: 'Vê o romaji, escolhe o hiragana',
+/**
+ * `{kana}` vira "hiragana" ou "katakana" conforme o silabário escolhido — as duas
+ * palavras são exatamente os valores de `Script`, então não há tabela de tradução
+ * no meio. Sai como função porque a dica depende dos ajustes, e um `Record` fixo
+ * mentiria para quem está treinando katakana.
+ */
+const EXERCISE_HINT_TEMPLATES: Record<ExerciseType, string> = {
+  recognize: 'Vê o {kana}, escolhe o romaji',
+  recall: 'Vê o romaji, escolhe o {kana}',
   draw_guided: 'Traça por cima do guia, traço a traço',
   draw_free: 'Folha em branco, correção só no fim',
 };
+
+export function exerciseHint(type: ExerciseType, script: Script): string {
+  return EXERCISE_HINT_TEMPLATES[type].replace('{kana}', script);
+}
 
 export const MODE_LABELS: Record<SessionMode, string> = {
   ...EXERCISE_LABELS,
@@ -71,6 +81,15 @@ export type SkillState = {
 };
 
 export type Settings = {
+  /**
+   * Um silabário por vez, nunca os dois juntos. Misturá-los quebraria o modo
+   * `recall`, que mostra "a" e pede a letra: あ e ア seriam as duas certas.
+   *
+   * Trocar aqui não apaga nada — o progresso é chaveado por caractere, e ア e あ
+   * são codepoints diferentes, então cada silabário guarda o seu e reaparece
+   * onde parou.
+   */
+  script: Script;
   enabledGroups: Group[];
   sessionSize: number;
   leniency: 'tranquilo' | 'exigente';
@@ -115,6 +134,7 @@ const NO_REPEAT_WINDOW = 3;
 const FAST_ANSWER_MS = 3000;
 
 export const DEFAULT_SETTINGS: Settings = {
+  script: 'hiragana',
   enabledGroups: ['basic'],
   sessionSize: 20,
   leniency: 'tranquilo',
@@ -184,11 +204,19 @@ export function applyResult(
   };
 }
 
-/** Caracteres dos grupos ligados, na ordem em que devem ser apresentados. */
+/**
+ * Caracteres do silabário e dos grupos ligados, na ordem em que devem ser
+ * apresentados.
+ *
+ * É o único ponto onde o silabário é filtrado. Todo o resto — `poolForMode`,
+ * `introducedIn`, `knownChars`, as estatísticas, as alternativas de múltipla
+ * escolha — passa por aqui, então nada mais precisa saber que existem dois.
+ */
 export function poolFor(settings: Settings): string[] {
   const enabled = new Set(settings.enabledGroups);
-  const basics = INTRO_ORDER.filter((c) => enabled.has(KANA_BY_CHAR.get(c)!.group));
-  const extras = ALL_KANA.filter((k) => k.group !== 'basic' && enabled.has(k.group)).map((k) => k.char);
+  const inScript = (k: { script: Script; group: Group }) => k.script === settings.script && enabled.has(k.group);
+  const basics = INTRO_ORDER.filter((c) => inScript(KANA_BY_CHAR.get(c)!));
+  const extras = ALL_KANA.filter((k) => k.group !== 'basic' && inScript(k)).map((k) => k.char);
   return [...basics, ...extras];
 }
 

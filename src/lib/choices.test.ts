@@ -2,14 +2,20 @@ import { describe, expect, it } from 'vitest';
 import { buildChoices, pickDistractors } from './choices';
 import { ALL_KANA, KANA_BY_CHAR, INTRO_ORDER } from '../data/kana';
 
-const BASICOS = INTRO_ORDER;
+/**
+ * `INTRO_ORDER` carrega os dois silabários, mas um conjunto real nunca mistura —
+ * `poolFor` filtra por silabário antes de chegar aqui. Os testes usam um lado por
+ * vez para medir o que o app de fato monta.
+ */
+const BASICOS = INTRO_ORDER.filter((c) => KANA_BY_CHAR.get(c)!.script === 'hiragana');
+const BASICOS_KATAKANA = INTRO_ORDER.filter((c) => KANA_BY_CHAR.get(c)!.script === 'katakana');
 const kana = (char: string) => KANA_BY_CHAR.get(char)!;
 
 /** Com que frequência `char` aparece entre os distratores de `target`. */
-function frequency(target: string, char: string, rounds = 200): number {
+function frequency(target: string, char: string, pool: string[] = BASICOS, rounds = 200): number {
   let hits = 0;
   for (let i = 0; i < rounds; i++) {
-    if (pickDistractors(kana(target), BASICOS).some((k) => k.char === char)) hits++;
+    if (pickDistractors(kana(target), pool).some((k) => k.char === char)) hits++;
   }
   return hits / rounds;
 }
@@ -50,6 +56,31 @@ describe('pickDistractors', () => {
   it('devolve menos opções quando o conjunto é pequeno, sem inventar', () => {
     const distratores = pickDistractors(kana('あ'), ['あ', 'い']);
     expect(distratores.map((k) => k.char)).toEqual(['い']);
+  });
+});
+
+describe('pickDistractors em katakana', () => {
+  it('usa os confusáveis do katakana, que são outros', () => {
+    // As duas piores do silabário: mesmos traços, direção trocada. Se estes dois
+    // não vierem quase sempre, o exercício virou sorteio.
+    expect(frequency('シ', 'ツ', BASICOS_KATAKANA)).toBeGreaterThan(0.8);
+    expect(frequency('ソ', 'ン', BASICOS_KATAKANA)).toBeGreaterThan(0.8);
+  });
+
+  it('não herda os confusáveis do hiragana', () => {
+    // お é confusável de あ, mas オ não é de ア — a semelhança era da silhueta do
+    // hiragana. Deslocar a lista de codepoint teria produzido exatamente isso.
+    expect(kana('ア').confusable).not.toContain('オ');
+    expect(kana('あ').confusable).toContain('お');
+  });
+
+  it('dá a cada silabário uma lista própria e não vazia nos básicos', () => {
+    for (const char of [...BASICOS, ...BASICOS_KATAKANA]) {
+      const alvo = kana(char);
+      for (const outro of alvo.confusable) {
+        expect(kana(outro).script).toBe(alvo.script);
+      }
+    }
   });
 });
 

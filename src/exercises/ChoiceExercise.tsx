@@ -1,7 +1,12 @@
 /**
  * Os dois exercícios de múltipla escolha, que são o mesmo exercício de trás para
- * frente: `recognize` mostra o hiragana e pede o romaji, `recall` mostra o romaji
- * e pede o hiragana.
+ * frente: `recognize` mostra a letra e pede o romaji, `recall` mostra o romaji e
+ * pede a letra.
+ *
+ * O silabário sai do próprio `kana` — `kana.script` já é a palavra "hiragana" ou
+ * "katakana" —, então nenhum prop novo desce até aqui. É `recall` que precisa
+ * dele: "qual é esse romaji?" sem dizer de qual silabário seria uma pergunta com
+ * duas respostas.
  *
  * Escrever os dois com o mesmo componente evita justamente o bug do
  * hiragana-trainer, em que o modo reverso continuava listando romaji nas opções
@@ -35,7 +40,7 @@ export function ChoiceExercise({ kana, pool, mode, sound, onDone }: Props) {
 
   const options: Option[] = choices.map((choice, i) => ({
     id: `${choice.kana.char}-${i}`,
-    label: mode === 'recognize' ? choice.kana.romaji : `hiragana ${choice.kana.romaji}`,
+    label: mode === 'recognize' ? choice.kana.romaji : `${choice.kana.script} ${choice.kana.romaji}`,
     correct: choice.correct,
     node:
       mode === 'recognize' ? (
@@ -64,7 +69,7 @@ export function ChoiceExercise({ kana, pool, mode, sound, onDone }: Props) {
           {mode === 'recognize' ? (
             <KanaGlyph char={kana.char} className="h-full w-full" weight={4} />
           ) : (
-            // O romaji é a pergunta e precisa pesar tanto quanto o hiragana pesa
+            // O romaji é a pergunta e precisa pesar tanto quanto a letra pesa
             // no outro sentido.
             <span className="lowercase text-[clamp(3.5rem,22vw,6rem)]" style={{ letterSpacing: '0.04em' }}>
               {kana.romaji}
@@ -94,7 +99,7 @@ export function ChoiceExercise({ kana, pool, mode, sound, onDone }: Props) {
               ? 'certo'
               : mode === 'recognize'
                 ? 'Qual é o romaji?'
-                : 'Qual hiragana é esse romaji?'}
+                : `Qual ${kana.script} é esse romaji?`}
           </span>
         )}
       </div>

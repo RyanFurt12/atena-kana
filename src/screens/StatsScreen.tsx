@@ -14,9 +14,9 @@ import { useState } from 'react';
 import { GojuonGrid } from '../components/GojuonGrid';
 import { ComoFunciona } from '../components/ComoFunciona';
 import {
-  EXERCISE_HINTS,
   EXERCISE_LABELS,
   EXERCISE_TYPES,
+  exerciseHint,
   modeProgress,
   type ExerciseType,
   type Progress,
@@ -78,7 +78,7 @@ export function StatsScreen({ progress, settings, onBack }: Props) {
         <div className="flex flex-col">
           <span className="text-sm">{EXERCISE_LABELS[tab]}</span>
           <span className="text-xs" style={{ color: 'var(--ink-dim)' }}>
-            {EXERCISE_HINTS[tab]}
+            {exerciseHint(tab, settings.script)}
           </span>
         </div>
         <span className="text-right" style={{ fontFamily: 'var(--font-mono)' }}>

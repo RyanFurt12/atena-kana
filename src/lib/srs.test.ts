@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { KANA_BY_CHAR } from '../data/kana';
 import {
   DEFAULT_SETTINGS,
   EXERCISE_TYPES,
@@ -98,6 +99,74 @@ describe('escopo de cada modo', () => {
     const progress = progressWith(['が'], 3);
     expect(introducedIn(progress, DEFAULT_SETTINGS, 'recognize')).toEqual([]);
     expect(getSkill(progress, 'が', 'recognize').box).toBe(3);
+  });
+});
+
+describe('silabário', () => {
+  const katakana: Settings = { ...DEFAULT_SETTINGS, script: 'katakana' };
+
+  it('entrega um silabário por vez, sem vazar o outro', () => {
+    const hira = poolFor(DEFAULT_SETTINGS);
+    const kata = poolFor(katakana);
+
+    expect(hira).toContain('あ');
+    expect(hira).not.toContain('ア');
+    expect(kata).toContain('ア');
+    expect(kata).not.toContain('あ');
+  });
+
+  it('dá aos dois o mesmo tamanho e a mesma ordem do gojūon', () => {
+    expect(poolFor(katakana)).toHaveLength(poolFor(DEFAULT_SETTINGS).length);
+    expect(poolFor(katakana).slice(0, 5)).toEqual(['ア', 'イ', 'ウ', 'エ', 'オ']);
+    // ン fecha a lista dos básicos, como ん do outro lado.
+    expect(poolFor(katakana).at(-1)).toBe('ン');
+  });
+
+  it('mantém os grupos funcionando dentro do katakana', () => {
+    expect(poolFor({ ...katakana, enabledGroups: ['basic', 'dakuten'] })).toContain('ガ');
+    expect(poolFor(katakana)).not.toContain('ガ');
+    // キャ são dois caracteres nos dois silabários, então segue fora do desenho.
+    const comYoon: Settings = { ...katakana, enabledGroups: ['basic', 'yoon'] };
+    expect(poolForMode(comYoon, 'recognize')).toContain('キャ');
+    expect(poolForMode(comYoon, 'draw_free')).not.toContain('キャ');
+  });
+
+  it('deixa o katakana desenhável, que é o que o KanjiVG precisava cobrir', () => {
+    expect(poolForMode(katakana, 'draw_guided')).toHaveLength(poolFor(katakana).length);
+  });
+
+  it('guarda o progresso de cada silabário separado, e trocar não apaga nada', () => {
+    // ア e あ são codepoints diferentes, então a chave do progresso já os separa
+    // sozinha — é por isso que trocar de silabário não precisou de migração.
+    const progress = progressWith(['あ', 'ア'], 5);
+
+    expect(introducedIn(progress, DEFAULT_SETTINGS, 'recognize')).toEqual(['あ']);
+    expect(introducedIn(progress, katakana, 'recognize')).toEqual(['ア']);
+    expect(getSkill(progress, 'あ', 'recognize').box).toBe(5);
+    expect(getSkill(progress, 'ア', 'recognize').box).toBe(5);
+  });
+
+  it('conta as estatísticas só do silabário escolhido', () => {
+    const progress = progressWith(['あ', 'い', 'ア'], 5);
+    expect(modeProgress(progress, DEFAULT_SETTINGS, 'recognize').mastered).toBe(2);
+    expect(modeProgress(progress, katakana, 'recognize').mastered).toBe(1);
+  });
+
+  it('monta baralhos que nunca cruzam os dois', () => {
+    const progress = progressWith(['あ', 'い', 'う', 'ア', 'イ', 'ウ'], 3);
+    // Vale para o baralho inteiro, não só para o que já foi apresentado: o
+    // `unlockNext` também injeta caracteres novos, e eles têm de vir do mesmo
+    // lado. É a garantia que faz o modo `recall` ter uma resposta só.
+    const deck = buildDeck(progress, katakana, 'geral', NOW, seeded(7));
+
+    expect(deck).not.toHaveLength(0);
+    for (const card of deck) {
+      expect(KANA_BY_CHAR.get(card.char)!.script).toBe('katakana');
+    }
+  });
+
+  it('nasce em hiragana, para quem já usava o app não trocar de silabário sozinho', () => {
+    expect(DEFAULT_SETTINGS.script).toBe('hiragana');
   });
 });
 

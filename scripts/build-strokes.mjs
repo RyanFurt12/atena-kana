@@ -44,8 +44,17 @@ const UI_KANJI = [
   '定',
 ];
 
-/** Contagens conhecidas, para o script falhar alto se o KanjiVG mudar de forma. */
-const EXPECTED = { あ: 3, ん: 1, が: 5, ぱ: 4, ゃ: 3, き: 4, ほ: 4 };
+/**
+ * Contagens conhecidas, para o script falhar alto se o KanjiVG mudar de forma.
+ *
+ * Os pares hiragana/katakana da mesma sílaba servem de dobradiça: ぱ tem 4 traços
+ * e パ tem 3, ゃ tem 3 e ャ tem 2. Se algum dia os dois lados baterem, é sinal de
+ * que a faixa do katakana veio errada — provavelmente repetindo o hiragana.
+ */
+const EXPECTED = {
+  あ: 3, ん: 1, が: 5, ぱ: 4, ゃ: 3, き: 4, ほ: 4,
+  ア: 2, ン: 2, ガ: 4, パ: 3, ャ: 2, キ: 3, ホ: 4,
+};
 
 /** あ (U+3042) vira "03042.svg": codepoint em hex minúsculo, 5 dígitos. */
 function svgName(char) {
@@ -80,11 +89,18 @@ async function fetchStrokes(char) {
 }
 
 async function main() {
-  // ぁ (U+3041) até ん (U+3093) cobre tudo que o app usa: os 46 básicos, dakuten,
-  // handakuten e os pequenos ゃゅょっ. Yōon são dois caracteres (きゃ = き + ゃ),
-  // então guardamos cada componente separado e o app desenha um depois do outro.
+  // ぁ (U+3041) até ん (U+3093) cobre tudo que o app usa em hiragana: os 46
+  // básicos, dakuten, handakuten e os pequenos ゃゅょっ. Yōon são dois caracteres
+  // (きゃ = き + ゃ), então guardamos cada componente separado e o app desenha um
+  // depois do outro.
+  //
+  // ァ (U+30A1) até ヺ (U+30FA) é a mesma faixa em katakana, deslocada de 0x60 —
+  // a correspondência de codepoint é exata do ぁ ao ん, e é dela que
+  // `data/kana.ts` deriva a tabela inteira do katakana. ー (U+30FC) fica de fora
+  // de propósito: é marca de alongamento, não uma letra do gojūon.
   const simple = [];
   for (let cp = 0x3041; cp <= 0x3093; cp++) simple.push(String.fromCodePoint(cp));
+  for (let cp = 0x30a1; cp <= 0x30fa; cp++) simple.push(String.fromCodePoint(cp));
 
   console.log(`Baixando ${simple.length} caracteres do KanjiVG…`);
 

@@ -1,14 +1,18 @@
 # Kana Trainer
 
-Treino de hiragana em quatro modos, cada um com progresso próprio:
+Treino de hiragana **ou** katakana em quatro modos, cada um com progresso próprio:
 
 | modo | o que faz |
 | --- | --- |
-| **Ler** | vê o hiragana, escolhe o som |
-| **Lembrar** | vê o som, escolhe o hiragana |
+| **Ler** | vê a letra, escolhe o som |
+| **Lembrar** | vê o som, escolhe a letra |
 | **Aprender a desenhar** | traça por cima do guia, traço a traço, corrigido na hora |
 | **Desenhar de memória** | folha em branco, sem interrupção, correção só no fim |
 | **Geral** | mistura os quatro no mesmo baralho |
+
+O silabário é escolhido em Ajustes, um por vez — nunca os dois misturados, o que
+tornaria "Lembrar" ambíguo (あ e ア são as duas o som "a"). Cada um guarda o
+próprio progresso, então trocar não apaga nada e você volta onde parou.
 
 Site estático, sem backend. O progresso fica no aparelho e o app funciona offline
 depois da primeira visita.
@@ -42,12 +46,19 @@ funciona em subdiretório (GitHub Pages) sem configuração extra.
 
 ## Como funciona
 
-**Hiragana é desenhado, nunca escrito com fonte.** Todo caractere na tela — o
+**Kana é desenhado, nunca escrito com fonte.** Todo caractere na tela — o
 enunciado, as alternativas, a grade de progresso — é renderizado a partir dos
 paths de traço do KanjiVG (`src/components/KanaGlyph.tsx`). Isso significa que o
 caractere que ela lê é o mesmo esqueleto que vai reproduzir no exercício de
-desenho, e que o app não baixa nenhuma fonte japonesa: 28 KB de JSON cobrem os 83
-kana e o PWA fica realmente offline.
+desenho, e que o app não baixa nenhuma fonte japonesa: 52 KB de JSON cobrem os 173
+kana dos dois silabários e o PWA fica realmente offline.
+
+**Os dois silabários saem da mesma grade.** Hiragana e katakana ocupam faixas
+paralelas do Unicode, deslocadas de 0x60 (あ U+3042 / ア U+30A2), e a
+correspondência é exata em todo o gojūon — então `src/data/kana.ts` deriva o
+katakana da mesma tabela em vez de manter uma segunda cópia que poderia divergir.
+O que **não** se deriva é a lista de confusáveis: o katakana embaralha outras
+letras (シ/ツ, ソ/ン, ク/タ), e deslocar os pares do hiragana daria ruído.
 
 **A correção do desenho é geométrica, não IA.** Cada traço é reamostrado em 24
 pontos por comprimento de arco e comparado com a linha central do traço real
@@ -57,9 +68,10 @@ posição errada da sequência. Um reconhecedor de imagem responderia "isso é u
 e aceitaria o caractere desenhado em qualquer ordem.
 
 **Os distratores são os caracteres que ela confunde.** `src/lib/choices.ts` monta
-as alternativas por camadas: confusáveis declarados (あ/お, い/り), depois mesma
-linha do gojūon, depois mesma vogal. Sortear quatro caracteres entre 46 deixaria a
-resposta certa óbvia sem precisar ler nada.
+as alternativas por camadas: confusáveis declarados (あ/お e い/り no hiragana,
+シ/ツ e ソ/ン no katakana), depois mesma linha do gojūon, depois mesma vogal.
+Sortear quatro caracteres entre 46 deixaria a resposta certa óbvia sem precisar
+ler nada.
 
 **Cada modo progride sozinho.** `src/lib/srs.ts` usa Leitner por
 (caractere × modo), e a liberação de caracteres novos também é por modo: ela pode
@@ -81,7 +93,7 @@ baixas por muito mais tempo que ler — naturalmente aparece mais.
 
 ```
 scripts/build-strokes.mjs   baixa o KanjiVG → src/data/strokes.json
-src/data/kana.ts            tabela de kana, linhas, vogais, confusáveis
+src/data/kana.ts            tabela dos dois silabários, linhas, vogais, confusáveis
 src/lib/strokePath.ts       parser e amostragem de path SVG
 src/lib/strokeMatch.ts      validação de traço
 src/lib/srs.ts              progresso e montagem da sessão

@@ -16,11 +16,11 @@ import { InkBlot } from '../components/InkArt';
 import { ART } from '../lib/artwork';
 import { Bamboo, MountainSun } from '../components/sumie';
 import {
-  EXERCISE_HINTS,
   EXERCISE_KANJI,
   EXERCISE_LABELS,
   EXERCISE_TYPES,
   currentStreak,
+  exerciseHint,
   modeProgress,
   overallProgress,
   type ExerciseType,
@@ -75,7 +75,7 @@ function ModeRow({
       <span className="relative flex min-w-0 flex-1 flex-col">
         <span className="text-base leading-tight">{EXERCISE_LABELS[type]}</span>
         <span className="text-xs leading-snug" style={{ color: 'var(--ink-dim)' }}>
-          {EXERCISE_HINTS[type]}
+          {exerciseHint(type, settings.script)}
         </span>
       </span>
 
