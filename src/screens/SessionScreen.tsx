@@ -76,9 +76,11 @@ export function SessionScreen({ progress, settings, mode, onProgressChange, onEx
     return (
       <div className="mx-auto flex min-h-full max-w-md flex-col justify-center gap-6 p-6 text-center">
         <p style={{ color: 'var(--ink-dim)' }}>
-          {/* Acontece se ela ligar só yōon: きゃ são dois caracteres e não têm
-              traçado próprio, então os modos de desenho ficam sem cartas. */}
-          Não há caracteres para este modo com os grupos ligados hoje. Ajuste os grupos em Ajustes.
+          {/* Dois caminhos chegam aqui: ligar só yōon — きゃ são dois caracteres e
+              não têm traçado próprio, então os modos de desenho ficam sem cartas —
+              ou desligar fileiras até não sobrar nada para este modo. */}
+          Não há caracteres para este modo com os grupos e as fileiras de agora. Ajuste em Ajustes ›
+          Caracteres.
         </p>
         <button onClick={onExit} className="underline underline-offset-4">
           Voltar

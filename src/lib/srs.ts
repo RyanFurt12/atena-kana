@@ -16,7 +16,16 @@
  *    sessão sempre completa o número de cartas pedido, mesmo sem nada vencido.
  */
 
-import { ALL_KANA, INTRO_ORDER, KANA_BY_CHAR, type Group, type Script } from '../data/kana';
+import {
+  ALL_GROUPS,
+  ALL_KANA,
+  INTRO_ORDER,
+  KANA_BY_CHAR,
+  rowsOf,
+  type Group,
+  type KanaRow,
+  type Script,
+} from '../data/kana';
 import { canDraw } from './strokeMatch';
 
 export type ExerciseType = 'recognize' | 'recall' | 'draw_guided' | 'draw_free';
@@ -91,6 +100,18 @@ export type Settings = {
    */
   script: Script;
   enabledGroups: Group[];
+  /**
+   * Fileiras desligadas nos ajustes — "só quero treinar K e T".
+   *
+   * Guarda o que está *fora*, não o que está dentro, e é isso que faz a lista
+   * envelhecer bem: ligar o grupo dos dakuten depois traz as fileiras novas já
+   * ligadas, em vez de elas nascerem invisíveis por não constarem de uma lista
+   * escrita antes de elas existirem.
+   *
+   * Os nomes de fileira ("ka", "kya") são romaji e valem nos dois silabários, então
+   * a escolha atravessa a troca de hiragana para katakana sem tradução no meio.
+   */
+  disabledRows: string[];
   sessionSize: number;
   leniency: 'tranquilo' | 'exigente';
   sound: boolean;
@@ -136,6 +157,7 @@ const FAST_ANSWER_MS = 3000;
 export const DEFAULT_SETTINGS: Settings = {
   script: 'hiragana',
   enabledGroups: ['basic'],
+  disabledRows: [],
   sessionSize: 20,
   leniency: 'tranquilo',
   sound: true,
@@ -214,10 +236,30 @@ export function applyResult(
  */
 export function poolFor(settings: Settings): string[] {
   const enabled = new Set(settings.enabledGroups);
-  const inScript = (k: { script: Script; group: Group }) => k.script === settings.script && enabled.has(k.group);
-  const basics = INTRO_ORDER.filter((c) => inScript(KANA_BY_CHAR.get(c)!));
-  const extras = ALL_KANA.filter((k) => k.group !== 'basic' && inScript(k)).map((k) => k.char);
+  const off = new Set(settings.disabledRows);
+  const inScope = (k: { script: Script; group: Group; row: string }) =>
+    k.script === settings.script && enabled.has(k.group) && !off.has(k.row);
+  const basics = INTRO_ORDER.filter((c) => inScope(KANA_BY_CHAR.get(c)!));
+  const extras = ALL_KANA.filter((k) => k.group !== 'basic' && inScope(k)).map((k) => k.char);
   return [...basics, ...extras];
+}
+
+/**
+ * As fileiras que os ajustes têm de listar: as dos grupos ligados, ligadas ou
+ * não. Uma fileira desligada continua aparecendo — é o interruptor dela.
+ */
+export function rowsFor(settings: Settings): KanaRow[] {
+  const enabled = new Set(settings.enabledGroups);
+  return rowsOf(settings.script).filter((row) => enabled.has(row.group));
+}
+
+export function isRowOn(settings: Settings, row: string): boolean {
+  return !settings.disabledRows.includes(row);
+}
+
+/** Quantas fileiras sobraram ligadas — a trava contra desligar a última. */
+export function enabledRowCount(settings: Settings): number {
+  return rowsFor(settings).filter((row) => isRowOn(settings, row.row)).length;
 }
 
 /** Yōon (きゃ) são dois caracteres e não têm traçado próprio — fora dos modos de desenho. */
@@ -256,6 +298,79 @@ export function unlockNext(progress: Progress, settings: Settings, type: Exercis
   // Primeira sessão começa com um punhado; depois vai de pouco em pouco.
   const room = introduced.length === 0 ? MAX_NEW_PER_SESSION : MAX_NEW_PER_SESSION - weak;
   return candidates.slice(0, Math.max(1, room));
+}
+
+/**
+ * Tudo que o silabário escolhido tem, sem olhar grupos nem fileiras.
+ *
+ * É o alcance de "liberar todas": quem pula o ritmo gradual está dizendo que não
+ * quer mais ser dosada, e não que só as fileiras de hoje devem abrir. Liberar
+ * também o que está desligado não vaza nada para o treino — `introducedIn` filtra
+ * pelo pool antes de qualquer sessão —, e evita que ligar os dakuten no mês que
+ * vem recomece a dosagem sozinho.
+ */
+function fullScriptPool(settings: Settings, type: ExerciseType): string[] {
+  return poolForMode({ ...settings, enabledGroups: ALL_GROUPS, disabledRows: [] }, type);
+}
+
+/**
+ * Pula o ritmo gradual: marca como apresentado tudo que o silabário tem, nos
+ * quatro modos.
+ *
+ * Mexe só em `introduced` — as caixas ficam onde estavam. Liberar é dizer "pode
+ * me perguntar", não "considere que eu já sei": as letras entram na caixa 0 e
+ * ainda têm de ser conquistadas, então o número da tela inicial não salta.
+ */
+export function unlockAll(progress: Progress, settings: Settings): Progress {
+  const introduced = emptyIntroduced();
+  for (const type of EXERCISE_TYPES) {
+    const already = progress.introduced[type];
+    const seen = new Set(already);
+    introduced[type] = [...already, ...fullScriptPool(settings, type).filter((char) => !seen.has(char))];
+  }
+  return { ...progress, introduced };
+}
+
+/**
+ * Desfaz o atalho: tira da lista de apresentadas as letras que ela nunca chegou a
+ * responder, e o SRS volta a dosar a partir dali.
+ *
+ * O que já foi treinado fica, mesmo que tenha entrado pelo atalho — desfazer uma
+ * escolha de ritmo não pode custar progresso de verdade.
+ */
+export function relockUntouched(progress: Progress): Progress {
+  const introduced = emptyIntroduced();
+  for (const type of EXERCISE_TYPES) {
+    introduced[type] = progress.introduced[type].filter((char) => getSkill(progress, char, type).seen > 0);
+  }
+  return { ...progress, introduced };
+}
+
+/**
+ * Quantas liberações o atalho ainda faria, somando os quatro modos.
+ *
+ * Soma por modo e não por letra porque é assim que a liberação funciona: ler あ
+ * já estar liberado não libera desenhá-lo. Zero quer dizer que não há mais o que
+ * pular, e é o que apaga o botão nos ajustes.
+ */
+export function pendingUnlocks(progress: Progress, settings: Settings): number {
+  return EXERCISE_TYPES.reduce((total, type) => {
+    const already = new Set(progress.introduced[type]);
+    return total + fullScriptPool(settings, type).filter((char) => !already.has(char)).length;
+  }, 0);
+}
+
+/** Letras liberadas pelo atalho que ainda não foram respondidas nenhuma vez. */
+export function untouchedCount(progress: Progress, settings: Settings): number {
+  const chars = new Set(poolFor(settings));
+  return EXERCISE_TYPES.reduce(
+    (total, type) =>
+      total +
+      progress.introduced[type].filter(
+        (char) => chars.has(char) && getSkill(progress, char, type).seen === 0,
+      ).length,
+    0,
+  );
 }
 
 /**

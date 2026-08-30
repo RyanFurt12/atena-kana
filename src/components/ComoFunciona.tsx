@@ -65,6 +65,18 @@ export function ComoFunciona({ sessionSize }: { sessionSize: number }) {
             Cada modo libera no próprio ritmo. Empacar no desenho não segura a leitura, e é normal ler
             trinta letras enquanto desenha dez.
           </p>
+          <p>
+            Na grade acima, as letras de moldura tracejada são as que ainda não entraram. Se você já
+            conhece o silabário, dá para pular essa dosagem em Ajustes › Ritmo.
+          </p>
+        </Secao>
+
+        <Secao titulo="treinar só um pedaço">
+          <p>
+            Em Ajustes › Caracteres › Fileiras você desliga as linhas que não quer agora — para
+            treinar só o K e o T, por exemplo. Elas continuam na grade, riscadas, e o que já foi
+            treinado nelas fica guardado para quando voltarem.
+          </p>
         </Secao>
 
         <Secao titulo="os números">

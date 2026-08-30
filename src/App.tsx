@@ -89,6 +89,7 @@ export function App() {
             settings={settings}
             progress={progress}
             onChange={updateSettings}
+            onProgressChange={updateProgress}
             onRestore={(restoredProgress, restoredSettings) => {
               updateProgress(restoredProgress, true);
               updateSettings(restoredSettings);

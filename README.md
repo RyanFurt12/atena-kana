@@ -89,6 +89,24 @@ No modo geral, os quatro tipos entram no mesmo baralho sem regra especial: como 
 peso do sorteio é `(6 − caixa)^1,5`, desenhar de memória — que fica em caixas
 baixas por muito mais tempo que ler — naturalmente aparece mais.
 
+**A dosagem é o padrão, não uma regra.** Quem já conhece o silabário pula tudo em
+Ajustes → Ritmo (`unlockAll`), com confirmação, e volta atrás depois se quiser —
+`relockUntouched` re-esconde só o que nunca foi respondido, então desfazer não
+custa progresso real. Liberar mexe apenas em `introduced`: as letras entram na
+caixa 0 e continuam a ser conquistadas.
+
+**Dá para treinar só um pedaço.** Ajustes → Caracteres → Fileiras desliga linhas
+inteiras do gojūon ("só K e T"). `Settings.disabledRows` guarda o que está *fora*,
+não o que está dentro, para que ligar um grupo novo traga as fileiras dele já
+ligadas; os nomes são romaji e valem nos dois silabários. Uma fileira desligada
+some do baralho mas continua na grade do progresso, riscada — e o progresso dela
+fica guardado para quando voltar.
+
+A grade do gojūon mostra as três situações em marcas separadas, porque as causas
+são diferentes: moldura cheia (em treino), tracejada (o SRS ainda não liberou) e
+riscada (você desligou). Confundir "espere" com "você desligou" faria a grade
+pedir a ação errada.
+
 ## Estrutura
 
 ```

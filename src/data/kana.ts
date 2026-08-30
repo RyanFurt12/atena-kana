@@ -361,3 +361,69 @@ export function matchesRomaji(kana: Kana, answer: string): boolean {
   const normalized = answer.trim().toLowerCase();
   return normalized === kana.romaji || kana.accepts.includes(normalized);
 }
+
+/** Todos os grupos, na ordem em que aparecem na tabela. */
+export const ALL_GROUPS: Group[] = ['basic', 'dakuten', 'handakuten', 'yoon'];
+
+/**
+ * Uma linha do gojūon, já montada por vogal.
+ *
+ * Serve as duas telas que precisam pensar em *linha* e não em caractere solto: a
+ * grade do progresso, que desenha uma linha por fileira, e os ajustes, onde ela
+ * liga e desliga fileiras inteiras ("só quero treinar K e T"). As duas liam a
+ * mesma tabela de posições montada à mão, cada uma com a sua cópia — aqui a
+ * posição sai da própria `ALL_KANA`, então não há duas listas para divergirem.
+ */
+export type KanaRow = {
+  row: string;
+  group: Group;
+  /** A consoante, para o rótulo lateral da grade: か-き-く-け-こ vira "k". */
+  label: string;
+  /** Cinco casas, uma por vogal. `null` é buraco de verdade — ゆ não tem -i. */
+  cells: (Kana | null)[];
+  chars: string[];
+};
+
+/**
+ * O rótulo é o nome da linha sem a vogal final, porque é assim que a linha é
+ * chamada: か-き-く-け-こ é a linha do "k". A linha das vogais não tem consoante
+ * nenhuma e ん não tem vogal, então as duas são escritas à mão.
+ */
+function rowLabel(row: string): string {
+  if (row === 'a') return '—';
+  if (row === 'n') return 'n';
+  return row.slice(0, -1);
+}
+
+function buildRows(script: Script): KanaRow[] {
+  const byRow = new Map<string, KanaRow>();
+
+  for (const kana of ALL_KANA) {
+    if (kana.script !== script) continue;
+    let entry = byRow.get(kana.row);
+    if (!entry) {
+      entry = { row: kana.row, group: kana.group, label: rowLabel(kana.row), cells: [null, null, null, null, null], chars: [] };
+      byRow.set(kana.row, entry);
+    }
+    // ん não tem vogal: cai na primeira casa, que é onde a grade já o desenhava.
+    entry.cells[kana.vowel === null ? 0 : VOWELS.indexOf(kana.vowel)] = kana;
+    entry.chars.push(kana.char);
+  }
+
+  // `ALL_KANA` empurra ん para depois dos dakuten — ele é acrescentado fora do
+  // laço da grade, por não ter linha nem vogal. Na tela a fileira dele pertence
+  // aos básicos, então a ordem final é por grupo; dentro do grupo a ordem de
+  // `ALL_KANA` já é a certa, e um sort estável a preserva.
+  return [...byRow.values()].sort((a, b) => ALL_GROUPS.indexOf(a.group) - ALL_GROUPS.indexOf(b.group));
+}
+
+const ROW_CACHE = new Map<Script, KanaRow[]>();
+
+/** As linhas de um silabário, na ordem da tabela. Memoizado: é sempre o mesmo. */
+export function rowsOf(script: Script): KanaRow[] {
+  const cached = ROW_CACHE.get(script);
+  if (cached) return cached;
+  const rows = buildRows(script);
+  ROW_CACHE.set(script, rows);
+  return rows;
+}

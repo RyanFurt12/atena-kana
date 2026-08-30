@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { KANA_BY_CHAR } from '../data/kana';
+import { KANA_BY_CHAR, rowsOf } from '../data/kana';
 import {
   DEFAULT_SETTINGS,
   EXERCISE_TYPES,
@@ -8,17 +8,23 @@ import {
   buildDeck,
   currentStreak,
   emptyProgress,
+  enabledRowCount,
   emptySkill,
   getSkill,
   introducedIn,
   knownChars,
   migrateProgress,
   modeProgress,
+  pendingUnlocks,
   poolFor,
   poolForMode,
   recordStudyDay,
+  relockUntouched,
+  rowsFor,
   skillKey,
+  unlockAll,
   unlockNext,
+  untouchedCount,
   type ExerciseType,
   type Progress,
   type ProgressV1,
@@ -426,5 +432,125 @@ describe('knownChars — a fonte das alternativas', () => {
     const conhecidos = new Set(knownChars(progress, DEFAULT_SETTINGS, 'recognize'));
     const deck = buildDeck(progress, DEFAULT_SETTINGS, 'recognize', NOW, seeded(9));
     for (const card of deck) expect(conhecidos.has(card.char)).toBe(true);
+  });
+});
+
+describe('fileiras', () => {
+  it('desliga uma fileira sem tocar nas outras', () => {
+    const settings: Settings = { ...DEFAULT_SETTINGS, disabledRows: ['sa'] };
+    expect(poolFor(settings)).not.toContain('さ');
+    expect(poolFor(settings)).not.toContain('そ');
+    expect(poolFor(settings)).toContain('か');
+    expect(poolFor(settings)).toHaveLength(poolFor(DEFAULT_SETTINGS).length - 5);
+  });
+
+  it('vale igual nos dois silabários, porque o nome da fileira é romaji', () => {
+    const settings: Settings = { ...DEFAULT_SETTINGS, script: 'katakana', disabledRows: ['ka'] };
+    expect(poolFor(settings)).not.toContain('カ');
+    expect(poolFor(settings)).toContain('サ');
+  });
+
+  it('deixa treinar só o que ela pediu — "só K e T"', () => {
+    const todas = rowsOf('hiragana')
+      .filter((row) => row.group === 'basic')
+      .map((row) => row.row);
+    const settings: Settings = {
+      ...DEFAULT_SETTINGS,
+      disabledRows: todas.filter((row) => row !== 'ka' && row !== 'ta'),
+    };
+    expect(poolFor(settings)).toEqual(['か', 'き', 'く', 'け', 'こ', 'た', 'ち', 'つ', 'て', 'と']);
+  });
+
+  it('lista para os ajustes só as fileiras dos grupos ligados', () => {
+    expect(rowsFor(DEFAULT_SETTINGS).every((row) => row.group === 'basic')).toBe(true);
+    expect(rowsFor({ ...DEFAULT_SETTINGS, enabledGroups: ['basic', 'dakuten'] }).map((r) => r.row)).toContain('ga');
+  });
+
+  it('conta as ligadas ignorando fileiras de grupo desligado', () => {
+    const settings: Settings = { ...DEFAULT_SETTINGS, disabledRows: ['ka', 'ga'] };
+    // 11 fileiras básicas (a…wa mais n) menos a de "ka": "ga" nem está em jogo.
+    expect(enabledRowCount(settings)).toBe(rowsFor(DEFAULT_SETTINGS).length - 1);
+  });
+
+  it('não deixa o baralho vazio quando a fileira volta a ligar', () => {
+    const settings: Settings = { ...DEFAULT_SETTINGS, disabledRows: ['a'] };
+    const deck = buildDeck(emptyProgress(), settings, 'recognize', NOW, seeded(4));
+    expect(deck).toHaveLength(settings.sessionSize);
+    for (const card of deck) expect(KANA_BY_CHAR.get(card.char)!.row).not.toBe('a');
+  });
+
+  it('guarda o progresso de uma fileira desligada', () => {
+    const progress = progressWith(['さ'], 3);
+    const settings: Settings = { ...DEFAULT_SETTINGS, disabledRows: ['sa'] };
+    expect(introducedIn(progress, settings, 'recognize')).toEqual([]);
+    expect(getSkill(progress, 'さ', 'recognize').box).toBe(3);
+  });
+});
+
+describe('pular o ritmo gradual', () => {
+  it('libera o silabário inteiro nos quatro modos', () => {
+    const liberado = unlockAll(emptyProgress(), DEFAULT_SETTINGS);
+    // 104 = 46 básicos + 20 dakuten + 5 handakuten + 33 yōon. O atalho ignora os
+    // grupos de propósito; os 33 yōon somem só onde não há traçado.
+    expect(liberado.introduced.recognize).toHaveLength(104);
+    expect(liberado.introduced.draw_free).toHaveLength(104 - 33);
+    // O que o treino vê continua sendo o pool dos ajustes: só os básicos.
+    expect(introducedIn(liberado, DEFAULT_SETTINGS, 'recognize')).toHaveLength(46);
+  });
+
+  it('libera também o que os ajustes escondem, para não redosar depois', () => {
+    const settings: Settings = { ...DEFAULT_SETTINGS, disabledRows: ['sa'] };
+    const liberado = unlockAll(emptyProgress(), settings);
+    expect(liberado.introduced.recognize).toContain('さ');
+    // Escondido continua escondido: liberar não liga a fileira de volta.
+    expect(introducedIn(liberado, settings, 'recognize')).not.toContain('さ');
+  });
+
+  it('não inventa domínio: as letras entram na caixa 0', () => {
+    const liberado = unlockAll(emptyProgress(), DEFAULT_SETTINGS);
+    expect(liberado.skills).toEqual({});
+    expect(modeProgress(liberado, DEFAULT_SETTINGS, 'recognize').mastered).toBe(0);
+  });
+
+  it('não duplica nem reordena o que já estava apresentado', () => {
+    const progress = progressWith(['あ', 'い'], 3, ['recognize']);
+    const liberado = unlockAll(progress, DEFAULT_SETTINGS);
+    expect(liberado.introduced.recognize.slice(0, 2)).toEqual(['あ', 'い']);
+    expect(new Set(liberado.introduced.recognize).size).toBe(liberado.introduced.recognize.length);
+  });
+
+  it('yōon fica de fora dos modos de desenho mesmo no atalho', () => {
+    const settings: Settings = { ...DEFAULT_SETTINGS, enabledGroups: ['basic', 'yoon'] };
+    const liberado = unlockAll(emptyProgress(), settings);
+    expect(liberado.introduced.recognize).toContain('きゃ');
+    expect(liberado.introduced.draw_guided).not.toContain('きゃ');
+  });
+
+  it('zera o que falta liberar, e é isso que apaga o botão', () => {
+    expect(pendingUnlocks(emptyProgress(), DEFAULT_SETTINGS)).toBeGreaterThan(0);
+    expect(pendingUnlocks(unlockAll(emptyProgress(), DEFAULT_SETTINGS), DEFAULT_SETTINGS)).toBe(0);
+  });
+
+  it('desfaz o atalho sem cobrar o que já foi treinado', () => {
+    const progress = progressWith(['あ', 'い'], 3, ['recognize']);
+    const liberado = unlockAll(progress, DEFAULT_SETTINGS);
+    const voltou = relockUntouched(liberado);
+
+    expect(voltou.introduced.recognize).toEqual(['あ', 'い']);
+    expect(voltou.introduced.draw_free).toEqual([]);
+    expect(getSkill(voltou, 'あ', 'recognize').box).toBe(3);
+    // E o SRS volta a dosar dali em diante.
+    expect(unlockNext(voltou, DEFAULT_SETTINGS, 'recognize')).toContain('う');
+  });
+
+  it('conta as liberadas sem resposta, que é o que o "tem certeza?" promete tirar', () => {
+    const progress = progressWith(['あ'], 3, ['recognize']);
+    expect(untouchedCount(progress, DEFAULT_SETTINGS)).toBe(0);
+
+    // Conta o que está *à vista* — os 46 básicos nos quatro modos —, não as 104
+    // letras que o atalho liberou: o recado fala das letras que vão sumir do
+    // treino, e as de grupo desligado já não estavam nele.
+    const liberado = unlockAll(progress, DEFAULT_SETTINGS);
+    expect(untouchedCount(liberado, DEFAULT_SETTINGS)).toBe(46 * EXERCISE_TYPES.length - 1);
   });
 });
