@@ -356,7 +356,7 @@ export function SettingsScreen({
   };
 
   return (
-    <div className="mx-auto flex min-h-full max-w-md flex-col gap-8 p-6 pb-28">
+    <div className="mx-auto flex min-h-full max-w-md flex-col gap-8 p-6 pb-28 pt-16">
       <header className="flex items-baseline justify-between">
         <h1 className="text-2xl">Ajustes</h1>
         <button onClick={onBack} className="text-sm underline underline-offset-4" style={{ color: 'var(--ink-dim)' }}>

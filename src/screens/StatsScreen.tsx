@@ -47,7 +47,7 @@ export function StatsScreen({ progress, settings, onBack }: Props) {
   const accuracy = stats.seen === 0 ? null : Math.round((stats.correct / stats.seen) * 100);
 
   return (
-    <div className="mx-auto flex min-h-full max-w-md flex-col gap-6 p-6 pb-28">
+    <div className="mx-auto flex min-h-full max-w-md flex-col gap-6 p-6 pb-28 pt-16">
       <header className="flex items-baseline justify-between">
         <h1 className="text-2xl">Progresso</h1>
         <button onClick={onBack} className="text-sm underline underline-offset-4" style={{ color: 'var(--ink-dim)' }}>
